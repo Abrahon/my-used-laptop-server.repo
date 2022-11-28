@@ -23,25 +23,26 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@clu
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 
-function verifyJWT(req, res, next){
-    console.log('token inside verify',req.headers.authorization);
-    const autHeader = req.headers.authorization;
-    if(!authorization){
-        return res.status(401).send('unauthorized access');
-    }
+// function verifyJWT(req, res, next){
+//     console.log('token inside verify', req.headers.authorization);
+//     const autHeader = req.headers.authorization;
+//     if(!autHeader){
+//         return res.status(401).send({message: 'forbidden access'});
+//     }
 
-    const token = authHeader.split('')[1];
+//     const token =autHeader.split('')[1];
 
-    jwt.verify(token, process.env.ACCESS_TOKEN, function(err, decoded){
-        if(err){
-            return res.status.send(403).send({message: 'forbidden access'})
-        }
-        req.decoded = decoded;
-        next();
-    })
+//     jwt.verify(token, process.env.ACCESS_TOKEN, function(err, decoded){
+//         if(err){
+//             return res.status(403).send({message: 'forbidden access'})
+
+//         }
+//         req.decoded = decoded;
+//         next();
+//     })
 
 
-}
+// }
 
 async function run() {
     try {
@@ -67,7 +68,8 @@ async function run() {
             console.log(products)
             res.send(products)
         });
-        app.get('/bookings',verifyJWT, async(req, res)=>{
+
+        app.get('/bookings', async(req, res)=>{
             const email = req.query.email;
             const decodedEmail = req.decoded.email;
 
@@ -76,9 +78,9 @@ async function run() {
 
             }
             const query = {email: email};
-            const bookings = await bookingsCollection.find(query).toArray();
+            const bookings = await bookingsCollection.find(query).toArray()
             res.send(bookings);
-        })
+        });
         app.post('/bookings', async(req, res)=>{
             const booking = req.body;
             console.log(booking);
@@ -110,22 +112,46 @@ async function run() {
             console.log(user)
             res.status(403).send({accessToken:''})
 
+        });
+        app.get('/users', async(req, res) =>{
+            const query = {};
+            const users = await usersCollection.find(query).toArray();
+            res.send(users);
+        });
+        
+        app.get('/user/admin/:id', async(req, res)=>{
+            const id = req.params.id;
+            const query = {_id: ObjectId(id)}
+            const user = await usersCollection.findOne(query);
+            res.send({isAdmin: user?.role ==='admin'});
+            
         })
         app.post('/users', async(req, res)=>{
             const user = req.body;
             console.log(user);
             const result = await usersCollection.insertOne(user);
             res.send(result);
+        });
+
+        app.put('/users/admin/:email', async(req, res) =>{
+            const email = req.params.email;
+            const user = await usersCollection.findOne(query);
+            if(user?.role !== 'admin'){
+                return res.status(403).send({message: 'forbidden access'})
+            }
+            const id = req.params.id;
+            const filter = {_id:ObjectId(id) }
+            const options = {upsert: true};
+            const updatedDoc = {
+                $set: {
+                    role: 'admin'
+                }
+            }
+            const result = await usersCollection.updateOne(filter, updatedDoc, options);
+            res.send(result);
         })
 
 
-        // app.post('/users', async(req,res)=>{
-        //     const user = req.body;
-        //     const result = await usersCollection.insertOne(user);
-
-        //     res.send(result);
-
-        // })
 
 
 
