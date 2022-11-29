@@ -72,7 +72,7 @@ async function run() {
 
         app.get('/productQuality', async(req, res)=>{
             const query = {}
-            const result = await productsCollection.find(query).project({name:1}).toArray();
+            const result = await productsCollection.find(query).toArray();
             res.send(result)
         });
 
