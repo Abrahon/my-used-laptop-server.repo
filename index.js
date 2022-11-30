@@ -5,6 +5,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const jwt  = require('jsonwebtoken');
 
 const { query } = require('express');
+const { Await } = require('react-router-dom');
 require('dotenv').config();
 
 const app = express();
@@ -65,6 +66,52 @@ async function run() {
 
 
         }
+        // app.get('/v2/appointmentOptions', async (req, res) => {
+        //     const date = req.query.date;
+        //     const options = await appointmentOptionCollection.aggregate([
+        //         {
+        //             $lookup: {
+        //                 from: 'bookings',
+        //                 localField: 'name',
+        //                 foreignField: 'treatment',
+        //                 pipeline: [
+        //                     {
+        //                         $match: {
+        //                             $expr: {
+        //                                 $eq: ['$appointmentDate', date]
+        //                             }
+        //                         }
+        //                     }
+        //                 ],
+        //                 as: 'booked'
+        //             }
+        //         },
+        //         {
+        //             $project: {
+        //                 name: 1,
+        //                 price: 1, 
+        //                 slots: 1,
+        //                 booked: {
+        //                     $map: {
+        //                         input: '$booked',
+        //                         as: 'book',
+        //                         in: '$$book.slot'
+        //                     }
+        //                 }
+        //             }
+        //         },
+        //         {
+        //             $project: {
+        //                 name: 1,
+        //                 price: 1,
+        //                 slots: {
+        //                     $setDifference: ['$slots', '$booked']
+        //                 }
+        //             }
+        //         }
+        //     ]).toArray();
+        //     res.send(options);
+        // })
 
 
         app.get('/category', async (req, res) => {
@@ -132,17 +179,34 @@ async function run() {
             res.send(users);
         });
 
-        app.get('/users',async(req,res)=>{
+        app.get('/users/buyer',async(req,res)=>{
+            const query = {role:"buyer"};
+            const users = await usersCollection.find(query).toArray();
+            res.send(users)
 
         })
 
-        app.get('/users/admin/:id', async(req, res)=>{
-            const id = req.params.id;
-            const query = {_id: ObjectId(id)}
-            const user = await usersCollection.findOne(query);
-            res.send({isAdmin: user?.role ==='admin'});
-            
+        app.get('/users/seller',async(req,res)=>{
+            const query = {role:"seller"};
+            const users = await usersCollection.find(query).toArray();
+            res.send(users)
+
         });
+        app.get('/users/seller/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email };
+            const user = await usersCollection.findOne(query);
+            res.send({ isSeller: user?.role === 'seller' });
+        })
+
+        app.get('/users/admin/:email', async (req,res)=>{
+            const email = req.params.email; 
+            const query = {email}
+            const user = await usersCollection.findOne(query);
+            res.send({isAdmin: user?.role === 'admin'});
+ 
+         });
+
         app.post('/users', async(req, res)=>{
             const user = req.body;
             console.log(user);
@@ -150,7 +214,12 @@ async function run() {
             res.send(result);
         });
 
-        app.put('/users/admin/:email', verifyJWT, async(req, res) =>{
+        app.get('users', async(req,res)=>{
+
+
+        })
+
+        app.put('/users/admin/:id', verifyJWT, async(req, res) =>{
             const id = req.params.id;
             const filter = {_id:ObjectId(id) }
             const options = {upsert: true};
@@ -162,6 +231,18 @@ async function run() {
             const result = await usersCollection.updateOne(filter, updatedDoc, options);
             res.send(result);
         });
+
+        app.put('/addPrice', async(req, res)=>{
+            const filter = {}
+            const options = {upsert:true}
+            const updatedDoc = {
+                $set: {
+                    price: '99'
+                }
+            }
+            const result = await productsCollection.updateMany(filter, updatedDoc,options)
+            res.send(result);
+        })
         app.get('/laptops', verifyJWT, async(req,res)=>{
             const query = {};
             const laptops = await laptopsCollection.find(query).toArray();
@@ -179,7 +260,8 @@ async function run() {
             const result = await laptopsCollection.deleteOne(filter);
             res.send(result);
 
-        })
+        });
+        
 
         
 
@@ -198,4 +280,17 @@ app.get('/', (req, res) => {
 
 app.listen(port, () => {
     console.log(`Products sever running on ${port}`)
+})
+// app.get('/users/admin/:email', async (req, res) => {
+//     const email = req.params.email
+//     const query = { email };
+//     const user = await usersCollection.findOne(query)
+//     res.send({ isAdmin: user?.role === 'admin' })
+// })
+
+app.get('/users/seller/:email', async (req, res) => {
+    const email = req.params.email
+    const query = { email };
+    const user = await usersCollection.findOne(query)
+    res.send({ isSeller: user?.role === 'seller' })
 })
