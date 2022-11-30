@@ -92,18 +92,7 @@ async function run() {
         app.post('/bookings', async(req, res)=>{
             const booking = req.body;
             console.log(booking);
-            // const query = {
-            //     // email:booking.email,
-            //     product:booking.product
-            // }
-
-            // const alreadyBooked = await bookingsCollection.find(query).toArray();
-
-            // if(alreadyBooked.length){
-            //     const message = `You already have a booking on ${booking}`
-            //     return res.send({acknowledged: false, message})
-            // }
-
+           
             const result = await bookingsCollection.insertOne(booking);
             res.send(result);
         });
@@ -127,6 +116,10 @@ async function run() {
             const users = await usersCollection.find(query).toArray();
             res.send(users);
         });
+
+        app.get('/users',async(req,res)=>{
+
+        })
 
         app.get('/users/admin/:id', async(req, res)=>{
             const id = req.params.id;
@@ -159,10 +152,22 @@ async function run() {
             const result = await usersCollection.updateOne(filter, updatedDoc, options);
             res.send(result);
         });
-        app.post('/laptops', async(req,res)=>{
+        app.get('/laptops', verifyJWT, async(req,res)=>{
+            const query = {};
+            const laptops = await laptopsCollection.find(query).toArray();
+            res.send(laptops)
+        })
+        app.post('/laptops', verifyJWT, async(req,res)=>{
             const laptop =req.body;
             const result = await laptopsCollection.insertOne(laptop);
             res.send(result);
+        });
+        app.delete('/laptops/:id', verifyJWT, async(req,res)=>{
+            const id = req.params.id;
+            const filter = {_id:ObjectId(id)}
+            const result = await laptopsCollection.deleteOne(filter);
+            res.send(result);
+
         })
 
         
