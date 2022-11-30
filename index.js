@@ -51,6 +51,21 @@ async function run() {
         const usersCollection = client.db('UsedLaptop').collection('users');
         const laptopsCollection = client.db('UsedLaptop').collection('laptops');
 
+        const verifyAdmin = async(req, res, next)=>{
+            // console.log('inside verifyAdmin', req.decoded.email);
+            const decodedEmail = req.decoded.email;
+            const query = {email: decodedEmail};
+            const user = await usersCollection.findOne(query);
+
+            if(user?.role !== 'admin'){
+                
+                return res.status(403).send({message: 'forbidden access'})
+            }
+            next();
+
+
+        }
+
 
         app.get('/category', async (req, res) => {
             const query = {}
@@ -135,12 +150,7 @@ async function run() {
             res.send(result);
         });
 
-        app.put('/users/admin/:email', async(req, res) =>{
-            const email = req.params.email;
-            const user = await usersCollection.findOne(query);
-            if(user?.role !== 'admin'){
-                return res.status(403).send({message: 'forbidden access'})
-            }
+        app.put('/users/admin/:email', verifyJWT, async(req, res) =>{
             const id = req.params.id;
             const filter = {_id:ObjectId(id) }
             const options = {upsert: true};
@@ -162,6 +172,7 @@ async function run() {
             const result = await laptopsCollection.insertOne(laptop);
             res.send(result);
         });
+
         app.delete('/laptops/:id', verifyJWT, async(req,res)=>{
             const id = req.params.id;
             const filter = {_id:ObjectId(id)}
